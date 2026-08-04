@@ -3,7 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>2026泰國共識營即時計分看板</title>
+    <title>共識營即時計分看板</title>
+    <!-- 引入 Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <style>
         :root {
             --bg-color: #f1f5f9;
@@ -84,7 +87,6 @@
             box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3);
         }
 
-        /* ----- 排行榜頒獎台設計 ----- */
         .leaderboard-section {
             background: var(--card-bg);
             padding: 25px;
@@ -101,7 +103,6 @@
             font-weight: 700;
         }
 
-        /* 頒獎台（前三名）容器 */
         .podium-container {
             display: flex;
             justify-content: center;
@@ -124,9 +125,8 @@
             box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
         }
 
-        /* 第一名突顯 */
         .podium-card.rank-1 {
-            order: 2; /* 擺中間 */
+            order: 2;
             border-color: var(--gold-border);
             background: linear-gradient(180deg, #fffdf0 0%, var(--gold-bg) 100%);
             transform: translateY(-15px) scale(1.08);
@@ -134,16 +134,14 @@
             z-index: 2;
         }
 
-        /* 第二名 */
         .podium-card.rank-2 {
-            order: 1; /* 擺左邊 */
+            order: 1;
             border-color: var(--silver-border);
             background: linear-gradient(180deg, #ffffff 0%, var(--silver-bg) 100%);
         }
 
-        /* 第三名 */
         .podium-card.rank-3 {
-            order: 3; /* 擺右邊 */
+            order: 3;
             border-color: var(--bronze-border);
             background: linear-gradient(180deg, #fffaf5 0%, var(--bronze-bg) 100%);
         }
@@ -169,7 +167,6 @@
         .rank-2 .podium-score { color: var(--silver-text); }
         .rank-3 .podium-score { color: var(--bronze-text); }
 
-        /* 第 4 ~ 6 名簡潔列表 */
         .runner-ups-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -205,7 +202,6 @@
             color: var(--primary-color);
         }
 
-        /* 各組計分區塊 */
         .teams-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
@@ -265,7 +261,6 @@
         .btn-sub { background: #fee2e2; color: #b91c1c; flex: 1; }
         .btn-sub:hover { background: #fecaca; }
         
-        /* 編輯名稱按鈕樣式 */
         .btn-edit-name {
             background: #e2e8f0;
             color: #475569;
@@ -300,7 +295,6 @@
         }
         .btn-submit:hover { opacity: 0.9; }
 
-        /* 紀錄表格與管理者專區 */
         .log-section {
             background: var(--card-bg);
             padding: 25px;
@@ -342,26 +336,21 @@
 <body>
 
     <header>
-        <h1>🏆 2026泰國共識營即時計分看板</h1>
+        <h1>🏆 共識營即時計分看板</h1>
         <div class="role-switcher">
             <button id="btn-participant" class="toggle-btn active" onclick="switchRole('participant')">👀 觀看模式</button>
             <button id="btn-admin" class="toggle-btn" onclick="switchRole('admin')">⚙️ 管理者模式</button>
         </div>
     </header>
 
-    <!-- 即時頒獎台與排行榜 -->
     <section class="leaderboard-section">
         <h2 class="section-title">即時名次總覽</h2>
-        <!-- 前三名頒獎台 -->
         <div id="podium-container" class="podium-container"></div>
-        <!-- 4 ~ 6 名簡潔區 -->
         <div id="runner-ups-container" class="runner-ups-grid"></div>
     </section>
 
-    <!-- 各組計分卡片 -->
     <section id="teams-container" class="teams-grid"></section>
 
-    <!-- 異動紀錄 -->
     <section class="log-section">
         <h2 class="section-title">得分異動紀錄</h2>
         <table>
@@ -379,7 +368,6 @@
             </tbody>
         </table>
 
-        <!-- 管理員設定專區 -->
         <div id="admin-setting-zone" class="admin-setting-zone hide">
             <button class="btn btn-secondary" onclick="changeAdminPassword()">修改管理者密碼</button>
             <button class="btn btn-reset" onclick="resetAllData()">重置所有分數與紀錄</button>
@@ -387,6 +375,13 @@
     </section>
 
     <script>
+        // ⚠️ 請填入你的 Firebase Realtime Database 網址
+        const firebaseConfig = {
+            databaseURL: "https://thailand-3a66e-default-rtdb.firebaseio.com/"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
         const defaultTeams = [
             { id: 1, name: "第 1 組", score: 0 },
             { id: 2, name: "第 2 組", score: 0 },
@@ -396,12 +391,32 @@
             { id: 6, name: "第 6 組", score: 0 }
         ];
 
-        let teams = JSON.parse(localStorage.getItem('camp_teams')) || defaultTeams;
-        let logs = JSON.parse(localStorage.getItem('camp_logs')) || [];
-        let adminPassword = localStorage.getItem('camp_admin_pwd') || "admin"; // 預設密碼 admin
+        let teams = defaultTeams;
+        let logs = [];
+        let adminPassword = "admin";
         let currentRole = 'participant'; 
 
-        // 權限切換
+        // 即時監聽雲端資料庫變更（所有人的螢幕會同步更新）
+        db.ref('camp_data').on('value', (snapshot) => {
+            const data = snapshot.val();
+            if (data) {
+                if (data.teams) teams = data.teams;
+                if (data.logs) logs = data.logs;
+                if (data.adminPassword) adminPassword = data.adminPassword;
+            } else {
+                saveData(); // 初始化雲端資料
+            }
+            render();
+        });
+
+        function saveData() {
+            db.ref('camp_data').set({
+                teams: teams,
+                logs: logs,
+                adminPassword: adminPassword
+            });
+        }
+
         function switchRole(role) {
             if (role === 'admin') {
                 const inputPwd = prompt("請輸入管理者密碼：", "");
@@ -413,30 +428,22 @@
             currentRole = role;
             document.getElementById('btn-participant').classList.toggle('active', role === 'participant');
             document.getElementById('btn-admin').classList.toggle('active', role === 'admin');
-            
             document.getElementById('admin-setting-zone').classList.toggle('hide', role !== 'admin');
-            
             render();
         }
 
-        // 修改密碼功能
         function changeAdminPassword() {
             if (currentRole !== 'admin') return;
-            
             const newPwd = prompt("請輸入新的管理者密碼：", "");
             if (newPwd && newPwd.trim() !== "") {
                 adminPassword = newPwd.trim();
-                localStorage.setItem('camp_admin_pwd', adminPassword);
+                saveData();
                 alert("管理者密碼已順利變更！");
-            } else if (newPwd !== null) {
-                alert("密碼不能為空白！");
             }
         }
 
-        // 修改組別名稱功能
         function updateTeamName(teamId) {
             if (currentRole !== 'admin') return;
-
             const team = teams.find(t => t.id === teamId);
             if (!team) return;
 
@@ -444,14 +451,11 @@
             if (newName && newName.trim() !== "") {
                 team.name = newName.trim();
                 saveData();
-                render();
             }
         }
 
-        // 調整分數邏輯
         function updateScore(teamId, delta, reason = "") {
             if (currentRole !== 'admin') return;
-
             const team = teams.find(t => t.id === teamId);
             if (!team) return;
 
@@ -467,7 +471,6 @@
             logs.unshift(newLog);
 
             saveData();
-            render();
         }
 
         function handleCustomScore(event, teamId) {
@@ -482,34 +485,24 @@
             }
         }
 
-        function saveData() {
-            localStorage.setItem('camp_teams', JSON.stringify(teams));
-            localStorage.setItem('camp_logs', JSON.stringify(logs));
-        }
-
         function render() {
             renderLeaderboard();
             renderTeams();
             renderLogs();
         }
 
-        // 渲染全新排名的頒獎台排行榜
         function renderLeaderboard() {
             const sortedTeams = [...teams].sort((a, b) => b.score - a.score);
-            
             const podiumContainer = document.getElementById('podium-container');
             const runnerUpsContainer = document.getElementById('runner-ups-container');
             
             podiumContainer.innerHTML = '';
             runnerUpsContainer.innerHTML = '';
-
             const medals = ['👑 第一名', '🥈 第二名', '🥉 第三名'];
 
             sortedTeams.forEach((team, index) => {
                 const rank = index + 1;
-                
                 if (rank <= 3) {
-                    // 前三名渲染頒獎台卡片
                     const card = document.createElement('div');
                     card.className = `podium-card rank-${rank}`;
                     card.innerHTML = `
@@ -519,7 +512,6 @@
                     `;
                     podiumContainer.appendChild(card);
                 } else {
-                    // 第 4 ~ 6 名渲染簡潔橫條
                     const runnerCard = document.createElement('div');
                     runnerCard.className = 'runner-card';
                     runnerCard.innerHTML = `
@@ -543,10 +535,8 @@
                 let adminControlsHtml = '';
                 let editBtnHtml = '';
 
-                // 如果是管理者模式，顯示修改名稱按鈕與得分管理區塊
                 if (currentRole === 'admin') {
                     editBtnHtml = `<button class="btn btn-edit-name" onclick="updateTeamName(${team.id})">✏️ 改名</button>`;
-
                     adminControlsHtml = `
                         <div class="admin-controls">
                             <div class="quick-btn-group">
@@ -577,7 +567,7 @@
 
         function renderLogs() {
             const tbody = document.getElementById('log-table-body');
-            if (logs.length === 0) {
+            if (!logs || logs.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">尚無紀錄</td></tr>';
                 return;
             }
@@ -598,11 +588,8 @@
                 teams = defaultTeams.map(t => ({ ...t, score: 0 }));
                 logs = [];
                 saveData();
-                render();
             }
         }
-
-        render();
     </script>
 </body>
 </html>
