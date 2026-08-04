@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>2026共識營即時計分看板</title>
+    <title>共識營即時計分看板</title>
     <style>
         :root {
             --bg-color: #f1f5f9;
@@ -264,6 +264,19 @@
         .btn-add:hover { background: #bbf7d0; }
         .btn-sub { background: #fee2e2; color: #b91c1c; flex: 1; }
         .btn-sub:hover { background: #fecaca; }
+        
+        /* 編輯名稱按鈕樣式 */
+        .btn-edit-name {
+            background: #e2e8f0;
+            color: #475569;
+            padding: 4px 10px;
+            font-size: 0.85rem;
+            border-radius: 6px;
+        }
+        .btn-edit-name:hover {
+            background: #cbd5e1;
+            color: #0f172a;
+        }
 
         .custom-score-form {
             display: flex;
@@ -420,6 +433,21 @@
             }
         }
 
+        // 修改組別名稱功能
+        function updateTeamName(teamId) {
+            if (currentRole !== 'admin') return;
+
+            const team = teams.find(t => t.id === teamId);
+            if (!team) return;
+
+            const newName = prompt(`修改 ${team.name} 的名稱：`, team.name);
+            if (newName && newName.trim() !== "") {
+                team.name = newName.trim();
+                saveData();
+                render();
+            }
+        }
+
         // 調整分數邏輯
         function updateScore(teamId, delta, reason = "") {
             if (currentRole !== 'admin') return;
@@ -513,7 +541,12 @@
                 card.className = 'team-card';
                 
                 let adminControlsHtml = '';
+                let editBtnHtml = '';
+
+                // 如果是管理者模式，顯示修改名稱按鈕與得分管理區塊
                 if (currentRole === 'admin') {
+                    editBtnHtml = `<button class="btn btn-edit-name" onclick="updateTeamName(${team.id})">✏️ 改名</button>`;
+
                     adminControlsHtml = `
                         <div class="admin-controls">
                             <div class="quick-btn-group">
@@ -533,6 +566,7 @@
                 card.innerHTML = `
                     <div class="team-header">
                         <h2>${team.name}</h2>
+                        ${editBtnHtml}
                     </div>
                     <div class="score-display">${team.score}</div>
                     ${adminControlsHtml}
