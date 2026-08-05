@@ -3,159 +3,232 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>2026泰國共識營即時計分看板</title>
+    <title>2026泰國巔峰之戰．即時計分版</title>
     <!-- 引入 Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <style>
         :root {
-            --bg-color: #f1f5f9;
-            --card-bg: #ffffff;
-            --primary-color: #2563eb;
-            --text-color: #0f172a;
-            --border-color: #cbd5e1;
+            --text-main: #1e293b;
+            --text-sub: #64748b;
+            --glass-bg: rgba(255, 255, 255, 0.55);
+            --glass-border: rgba(255, 255, 255, 0.8);
+            --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1);
             
-            --gold-bg: #fef3c7;
             --gold-border: #f59e0b;
-            --gold-text: #b45309;
-            
-            --silver-bg: #f1f5f9;
-            --silver-border: #94a3b8;
-            --silver-text: #475569;
-            
-            --bronze-bg: #ffedd5;
-            --bronze-border: #f97316;
-            --bronze-text: #c2410c;
+            --gold-bg: linear-gradient(180deg, #ffffff 0%, #fffbeb 100%);
+            --silver-border: #cbd5e1;
+            --silver-bg: rgba(255, 255, 255, 0.9);
+            --bronze-border: #fdba74;
+            --bronze-bg: rgba(255, 255, 255, 0.9);
         }
 
         * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft JhengHei", Roboto, sans-serif;
         }
 
+        /* 漸層背景 (完全還原) */
         body {
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            padding: 20px;
+            background: linear-gradient(135deg, #d946ef 0%, #8b5cf6 30%, #06b6d4 100%);
+            background-attachment: fixed;
+            color: var(--text-main);
+            padding: 16px 12px;
             max-width: 1200px;
             margin: 0 auto;
+            min-height: 100vh;
         }
 
+        /* 毛玻璃面板 */
+        .glass-panel {
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            box-shadow: var(--glass-shadow);
+        }
+
+        /* 頂部標題列 (手機直排，電腦橫排) */
         header {
             display: flex;
-            justify-content: space-between;
+            flex-direction: column;
+            gap: 15px;
             align-items: center;
-            background: var(--card-bg);
-            padding: 20px 30px;
-            border-radius: 16px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-            margin-bottom: 25px;
+            padding: 18px 24px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        @media (min-width: 768px) {
+            header {
+                flex-direction: row;
+                justify-content: space-between;
+                padding: 20px 30px;
+            }
         }
 
         h1 {
-            font-size: 1.8rem;
-            color: var(--primary-color);
+            font-size: 1.4rem;
+            font-weight: 900;
+            color: #8b5cf6;
+            letter-spacing: 1px;
             display: flex;
             align-items: center;
             gap: 10px;
+        }
+
+        @media (min-width: 768px) {
+            h1 { font-size: 1.8rem; }
         }
 
         .role-switcher {
             display: flex;
-            align-items: center;
-            gap: 10px;
-            background: #e2e8f0;
-            padding: 6px 12px;
+            background: rgba(255, 255, 255, 0.4);
+            padding: 4px;
             border-radius: 30px;
+            width: 100%;
+            max-width: 280px;
         }
 
         .toggle-btn {
-            padding: 8px 18px;
+            flex: 1;
+            padding: 8px 16px;
             border: none;
             border-radius: 20px;
             cursor: pointer;
-            font-weight: bold;
-            font-size: 0.95rem;
-            transition: all 0.3s ease;
+            font-weight: 700;
+            font-size: 0.85rem;
+            color: var(--text-sub);
+            background: transparent;
+            transition: all 0.3s;
         }
 
         .toggle-btn.active {
-            background-color: var(--primary-color);
-            color: white;
-            box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3);
+            background: #ffffff;
+            color: #6366f1;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
         }
 
-        .leaderboard-section {
-            background: var(--card-bg);
-            padding: 25px;
-            border-radius: 16px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-            margin-bottom: 30px;
-        }
-
+        /* 區塊標題 */
         .section-title {
-            font-size: 1.4rem;
+            font-size: 1.3rem;
             margin-bottom: 20px;
-            border-left: 5px solid var(--primary-color);
-            padding-left: 12px;
-            font-weight: 700;
+            font-weight: 800;
+            color: var(--text-main);
+            text-align: center;
+            letter-spacing: 1px;
         }
 
+        /* 頒獎台排行榜 */
+        .leaderboard-section {
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        @media (min-width: 768px) {
+            .leaderboard-section { padding: 35px; }
+        }
+
+        /* 手機改為直排卡片，電腦恢復經典高低頒獎台 */
         .podium-container {
             display: flex;
-            justify-content: center;
-            align-items: flex-end;
-            gap: 15px;
+            flex-direction: column;
+            gap: 12px;
             margin-bottom: 20px;
-            padding-top: 10px;
+        }
+
+        @media (min-width: 768px) {
+            .podium-container {
+                flex-direction: row;
+                justify-content: center;
+                align-items: flex-end;
+                gap: 20px;
+                height: 240px;
+            }
         }
 
         .podium-card {
-            flex: 1;
-            max-width: 220px;
-            background: #ffffff;
-            border: 3px solid var(--border-color);
-            border-radius: 16px;
-            padding: 20px 15px;
-            text-align: center;
-            position: relative;
-            transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+            background: rgba(255, 255, 255, 0.85);
+            border-radius: 20px;
+            padding: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 2px solid transparent;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
         }
 
+        @media (min-width: 768px) {
+            .podium-card {
+                flex: 1;
+                flex-direction: column;
+                justify-content: center;
+                max-width: 220px;
+                padding: 24px 16px;
+                text-align: center;
+                position: relative;
+            }
+        }
+
+        /* 冠亞季軍特色外框與色彩 */
         .podium-card.rank-1 {
-            order: 2;
-            border-color: var(--gold-border);
-            background: linear-gradient(180deg, #fffdf0 0%, var(--gold-bg) 100%);
-            transform: translateY(-15px) scale(1.08);
-            box-shadow: 0 12px 24px -4px rgba(245, 158, 11, 0.3);
-            z-index: 2;
-        }
-
-        .podium-card.rank-2 {
             order: 1;
-            border-color: var(--silver-border);
-            background: linear-gradient(180deg, #ffffff 0%, var(--silver-bg) 100%);
+            border-color: var(--gold-border);
+            background: var(--gold-bg);
         }
-
+        .podium-card.rank-2 {
+            order: 2;
+            border-color: var(--silver-border);
+            background: var(--silver-bg);
+        }
         .podium-card.rank-3 {
             order: 3;
             border-color: var(--bronze-border);
-            background: linear-gradient(180deg, #fffaf5 0%, var(--bronze-bg) 100%);
+            background: var(--bronze-bg);
+        }
+
+        @media (min-width: 768px) {
+            .podium-card.rank-1 { order: 2; height: 230px; transform: translateY(-10px); }
+            .podium-card.rank-2 { order: 1; height: 190px; }
+            .podium-card.rank-3 { order: 3; height: 170px; }
         }
 
         .podium-badge {
-            font-size: 2.2rem;
-            margin-bottom: 5px;
-            line-height: 1;
+            font-size: 1.8rem;
+            position: relative;
+        }
+
+        @media (min-width: 768px) {
+            .podium-badge {
+                font-size: 2.2rem;
+                position: absolute;
+                top: -20px;
+                left: 50%;
+                transform: translateX(-50%);
+            }
+        }
+
+        .podium-left-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        @media (min-width: 768px) {
+            .podium-left-group {
+                flex-direction: column;
+                gap: 4px;
+                margin-top: 10px;
+            }
         }
 
         .podium-title {
-            font-size: 1.2rem;
+            font-size: 1.1rem;
             font-weight: 800;
-            margin-bottom: 8px;
+            color: var(--text-main);
         }
 
         .podium-score {
@@ -163,214 +236,206 @@
             font-weight: 900;
         }
 
-        .rank-1 .podium-score { color: var(--gold-text); }
-        .rank-2 .podium-score { color: var(--silver-text); }
-        .rank-3 .podium-score { color: var(--bronze-text); }
+        .rank-1 .podium-score { color: #eab308; }
+        .rank-2 .podium-score { color: #94a3b8; }
+        .rank-3 .podium-score { color: #f97316; }
 
+        /* 4 ~ 6 名小卡片 */
         .runner-ups-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            grid-template-columns: 1fr;
             gap: 12px;
-            padding-top: 15px;
-            border-top: 2px dashed #f1f5f9;
+            padding-top: 20px;
+        }
+
+        @media (min-width: 600px) {
+            .runner-ups-grid { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
         }
 
         .runner-card {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            background: #f8fafc;
+            background: rgba(255, 255, 255, 0.75);
             padding: 12px 20px;
-            border-radius: 10px;
-            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.9);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.03);
         }
 
         .runner-rank {
-            font-weight: bold;
-            color: #64748b;
-            font-size: 1.1rem;
-        }
-
-        .runner-name {
-            font-weight: 700;
-            font-size: 1.05rem;
-        }
-
-        .runner-score {
             font-weight: 800;
-            font-size: 1.2rem;
-            color: var(--primary-color);
+            color: #94a3b8;
+            font-style: italic;
+            font-size: 0.95rem;
         }
 
+        .runner-name { font-weight: 800; font-size: 1.05rem; }
+        .runner-score { font-weight: 900; font-size: 1.2rem; color: #4f46e5; }
+
+        /* 各組計分卡片 */
         .teams-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-            gap: 20px;
-            margin-bottom: 30px;
+            grid-template-columns: 1fr;
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+
+        @media (min-width: 640px) {
+            .teams-grid { grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
         }
 
         .team-card {
-            background: var(--card-bg);
-            border-radius: 16px;
-            padding: 22px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.03);
-            border: 1px solid var(--border-color);
+            padding: 24px;
         }
 
-        .team-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
+        .team-header { display: flex; justify-content: space-between; align-items: center; }
+        .team-header h2 { font-size: 1.3rem; font-weight: 800; }
 
         .score-display {
-            font-size: 3.2rem;
+            font-size: 3.8rem;
             font-weight: 900;
-            color: var(--primary-color);
             text-align: center;
-            margin: 15px 0;
-            letter-spacing: -1px;
+            margin: 10px 0;
+            color: #4f46e5;
         }
 
+        /* 管理員操作區 */
         .admin-controls {
             display: flex;
             flex-direction: column;
-            gap: 12px;
+            gap: 10px;
             margin-top: 15px;
             padding-top: 15px;
-            border-top: 1px dashed var(--border-color);
+            border-top: 1px dashed rgba(0,0,0,0.1);
         }
 
-        .quick-btn-group {
-            display: flex;
-            gap: 8px;
-        }
+        .quick-btn-group { display: flex; gap: 8px; }
 
         .btn {
-            padding: 10px 14px;
+            padding: 10px;
             border: none;
-            border-radius: 8px;
+            border-radius: 10px;
             cursor: pointer;
-            font-weight: 700;
-            font-size: 0.95rem;
+            font-weight: 800;
+            font-size: 0.9rem;
             transition: all 0.2s;
         }
 
-        .btn-add { background: #dcfce7; color: #15803d; flex: 1; }
-        .btn-add:hover { background: #bbf7d0; }
-        .btn-sub { background: #fee2e2; color: #b91c1c; flex: 1; }
-        .btn-sub:hover { background: #fecaca; }
-        
+        .btn-add { background: #10b981; color: white; flex: 1; }
+        .btn-sub { background: #ef4444; color: white; flex: 1; }
+
         .btn-edit-name {
-            background: #e2e8f0;
-            color: #475569;
+            background: rgba(0,0,0,0.05);
+            color: var(--text-sub);
             padding: 4px 10px;
-            font-size: 0.85rem;
-            border-radius: 6px;
-        }
-        .btn-edit-name:hover {
-            background: #cbd5e1;
-            color: #0f172a;
+            border-radius: 12px;
+            font-size: 0.8rem;
         }
 
-        .custom-score-form {
-            display: flex;
-            gap: 8px;
-        }
+        .custom-score-form { display: flex; gap: 8px; }
 
         input[type="number"], input[type="text"] {
-            padding: 10px;
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.9);
+            border: 1px solid #cbd5e1;
+            padding: 8px 10px;
+            border-radius: 10px;
             outline: none;
-            font-size: 0.95rem;
+            font-size: 0.9rem;
         }
 
-        input[type="number"] { width: 85px; }
-        input[type="text"] { flex: 1; }
+        input[type="number"] { width: 75px; }
+        input[type="text"] { flex: 1; width: 100%; }
 
-        .btn-submit {
-            background: var(--primary-color);
-            color: white;
-        }
-        .btn-submit:hover { opacity: 0.9; }
+        .btn-submit { background: #6366f1; color: white; }
 
+        /* 得分紀錄表格（包含滑動保護） */
         .log-section {
-            background: var(--card-bg);
-            padding: 25px;
-            border-radius: 16px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            padding: 24px;
+        }
+
+        .table-responsive {
+            width: 100%;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
         }
 
         table {
             width: 100%;
+            min-width: 500px;
             border-collapse: collapse;
-            margin-top: 12px;
+            margin-top: 10px;
         }
 
         th, td {
-            padding: 14px;
+            padding: 12px 14px;
             text-align: left;
-            border-bottom: 1px solid var(--border-color);
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+            white-space: nowrap;
         }
 
-        th { background: #f8fafc; font-weight: 700; color: #475569; }
+        th { color: var(--text-sub); font-weight: 800; font-size: 0.85rem; }
+        td { font-size: 0.95rem; font-weight: 600; }
 
         .hide { display: none !important; }
 
         .admin-setting-zone {
-            margin-top: 25px;
-            padding-top: 20px;
-            border-top: 2px solid var(--border-color);
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 1px dashed rgba(0,0,0,0.1);
             display: flex;
-            justify-content: space-between;
-            align-items: center;
+            flex-direction: column;
+            gap: 10px;
         }
-        
-        .btn-secondary { background: #64748b; color: white; }
-        .btn-secondary:hover { background: #475569; }
-        .btn-reset { background: #ef4444; color: white; }
-        .btn-reset:hover { background: #dc2626; }
+
+        @media (min-width: 600px) {
+            .admin-setting-zone { flex-direction: row; justify-content: space-between; }
+        }
+
+        .btn-secondary { background: rgba(255,255,255,0.8); color: var(--text-main); }
+        .btn-reset { background: #ffffff; color: #ef4444; border: 1px solid #fecaca; }
     </style>
 </head>
 <body>
 
-    <header>
-        <h1>🏆 2026泰國共識營即時計分看板</h1>
+    <header class="glass-panel">
+        <h1>🏆 2026泰國巔峰之戰．即時計分版</h1>
         <div class="role-switcher">
-            <button id="btn-participant" class="toggle-btn active" onclick="switchRole('participant')">👀 觀看模式</button>
-            <button id="btn-admin" class="toggle-btn" onclick="switchRole('admin')">⚙️ 管理者模式</button>
+            <button id="btn-participant" class="toggle-btn active" onclick="switchRole('participant')">現場觀看模式</button>
+            <button id="btn-admin" class="toggle-btn" onclick="switchRole('admin')">後台管理</button>
         </div>
     </header>
 
-    <section class="leaderboard-section">
-        <h2 class="section-title">即時名次總覽</h2>
+    <section class="leaderboard-section glass-panel">
+        <h2 class="section-title">即時風雲榜</h2>
         <div id="podium-container" class="podium-container"></div>
         <div id="runner-ups-container" class="runner-ups-grid"></div>
     </section>
 
     <section id="teams-container" class="teams-grid"></section>
 
-    <section class="log-section">
-        <h2 class="section-title">得分異動紀錄</h2>
-        <table>
-            <thead>
-                <tr>
-                    <th>時間</th>
-                    <th>組別</th>
-                    <th>變動</th>
-                    <th>最新總分</th>
-                    <th>事由 / 項目</th>
-                </tr>
-            </thead>
-            <tbody id="log-table-body">
-                <tr><td colspan="5" style="text-align:center;">尚無紀錄</td></tr>
-            </tbody>
-        </table>
+    <section class="log-section glass-panel">
+        <h2 class="section-title" style="text-align: left;">戰況紀錄</h2>
+        <div class="table-responsive">
+            <table>
+                <thead>
+                    <tr>
+                        <th>時間</th>
+                        <th>隊伍</th>
+                        <th>分數異動</th>
+                        <th>當前總分</th>
+                        <th>事由說明</th>
+                    </tr>
+                </thead>
+                <tbody id="log-table-body">
+                    <tr><td colspan="5" style="text-align:center; color: var(--text-sub);">尚未產生戰鬥紀錄</td></tr>
+                </tbody>
+            </table>
+        </div>
 
         <div id="admin-setting-zone" class="admin-setting-zone hide">
-            <button class="btn btn-secondary" onclick="changeAdminPassword()">修改管理者密碼</button>
-            <button class="btn btn-reset" onclick="resetAllData()">重置所有分數與紀錄</button>
+            <button class="btn btn-secondary" onclick="changeAdminPassword()">🔒 修改管理密碼</button>
+            <button class="btn btn-reset" onclick="resetAllData()">⚠️ 歸零所有數據</button>
         </div>
     </section>
 
@@ -396,7 +461,7 @@
         let adminPassword = "admin";
         let currentRole = 'participant'; 
 
-        // 即時監聽雲端資料庫變更（所有人的螢幕會同步更新）
+        // 監聽 Firebase 雲端資料庫變更
         db.ref('camp_data').on('value', (snapshot) => {
             const data = snapshot.val();
             if (data) {
@@ -404,24 +469,20 @@
                 if (data.logs) logs = data.logs;
                 if (data.adminPassword) adminPassword = data.adminPassword;
             } else {
-                saveData(); // 初始化雲端資料
+                saveData(); 
             }
             render();
         });
 
         function saveData() {
-            db.ref('camp_data').set({
-                teams: teams,
-                logs: logs,
-                adminPassword: adminPassword
-            });
+            db.ref('camp_data').set({ teams, logs, adminPassword });
         }
 
         function switchRole(role) {
             if (role === 'admin') {
-                const inputPwd = prompt("請輸入管理者密碼：", "");
+                const inputPwd = prompt("🔑 請輸入後台管理密碼：", "");
                 if (inputPwd !== adminPassword) {
-                    alert("密碼錯誤！");
+                    alert("❌ 密碼錯誤！");
                     return;
                 }
             }
@@ -434,11 +495,11 @@
 
         function changeAdminPassword() {
             if (currentRole !== 'admin') return;
-            const newPwd = prompt("請輸入新的管理者密碼：", "");
+            const newPwd = prompt("請設定新的管理密碼：", "");
             if (newPwd && newPwd.trim() !== "") {
                 adminPassword = newPwd.trim();
                 saveData();
-                alert("管理者密碼已順利變更！");
+                alert("✅ 管理密碼已更新！");
             }
         }
 
@@ -447,7 +508,7 @@
             const team = teams.find(t => t.id === teamId);
             if (!team) return;
 
-            const newName = prompt(`修改 ${team.name} 的名稱：`, team.name);
+            const newName = prompt(`為 ${team.name} 重新命名：`, team.name);
             if (newName && newName.trim() !== "") {
                 team.name = newName.trim();
                 saveData();
@@ -462,7 +523,7 @@
             team.score += delta;
             
             const newLog = {
-                time: new Date().toLocaleTimeString(),
+                time: new Date().toLocaleTimeString('zh-TW', { hour12: false }),
                 teamName: team.name,
                 delta: delta > 0 ? `+${delta}` : `${delta}`,
                 newScore: team.score,
@@ -498,7 +559,7 @@
             
             podiumContainer.innerHTML = '';
             runnerUpsContainer.innerHTML = '';
-            const medals = ['👑 第一名', '🥈 第二名', '🥉 第三名'];
+            const badges = ['👑', '🥈', '🥉'];
 
             sortedTeams.forEach((team, index) => {
                 const rank = index + 1;
@@ -506,18 +567,20 @@
                     const card = document.createElement('div');
                     card.className = `podium-card rank-${rank}`;
                     card.innerHTML = `
-                        <div class="podium-badge">${medals[rank - 1]}</div>
-                        <div class="podium-title">${team.name}</div>
-                        <div class="podium-score">${team.score} <span style="font-size:1.1rem; font-weight:normal;">分</span></div>
+                        <div class="podium-left-group">
+                            <span class="podium-badge">${badges[rank - 1]}</span>
+                            <span class="podium-title">${team.name}</span>
+                        </div>
+                        <div class="podium-score">${team.score}</div>
                     `;
                     podiumContainer.appendChild(card);
                 } else {
                     const runnerCard = document.createElement('div');
                     runnerCard.className = 'runner-card';
                     runnerCard.innerHTML = `
-                        <span class="runner-rank">第 ${rank} 名</span>
+                        <span class="runner-rank">No.${rank}</span>
                         <span class="runner-name">${team.name}</span>
-                        <span class="runner-score">${team.score} 分</span>
+                        <span class="runner-score">${team.score}</span>
                     `;
                     runnerUpsContainer.appendChild(runnerCard);
                 }
@@ -530,7 +593,7 @@
 
             teams.forEach(team => {
                 const card = document.createElement('div');
-                card.className = 'team-card';
+                card.className = 'team-card glass-panel';
                 
                 let adminControlsHtml = '';
                 let editBtnHtml = '';
@@ -546,7 +609,7 @@
                             </div>
                             <form class="custom-score-form" onsubmit="handleCustomScore(event, ${team.id})">
                                 <input type="number" name="points" placeholder="分數" required>
-                                <input type="text" name="reason" placeholder="加扣分事由 (選填)">
+                                <input type="text" name="reason" placeholder="原因 (選填)">
                                 <button type="submit" class="btn btn-submit">更新</button>
                             </form>
                         </div>
@@ -568,23 +631,23 @@
         function renderLogs() {
             const tbody = document.getElementById('log-table-body');
             if (!logs || logs.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">尚無紀錄</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color: var(--text-sub);">尚未產生戰鬥紀錄</td></tr>';
                 return;
             }
 
             tbody.innerHTML = logs.map(log => `
                 <tr>
-                    <td>${log.time}</td>
+                    <td style="color: #64748b;">${log.time}</td>
                     <td><strong>${log.teamName}</strong></td>
-                    <td style="color: ${log.delta.startsWith('+') ? '#15803d' : '#b91c1c'}; font-weight: bold;">${log.delta}</td>
-                    <td>${log.newScore}</td>
-                    <td>${log.reason}</td>
+                    <td style="color: ${log.delta.startsWith('+') ? '#10b981' : '#ef4444'};"><strong>${log.delta}</strong></td>
+                    <td style="color: #6366f1;"><strong>${log.newScore}</strong></td>
+                    <td style="color: #475569;">${log.reason}</td>
                 </tr>
             `).join('');
         }
 
         function resetAllData() {
-            if (confirm("確定要重置所有組別的分數與紀錄嗎？此動作無法復原！")) {
+            if (confirm("⚠️ 確定要歸零所有分數與紀錄嗎？此動作無法復原！")) {
                 teams = defaultTeams.map(t => ({ ...t, score: 0 }));
                 logs = [];
                 saveData();
