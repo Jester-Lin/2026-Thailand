@@ -30,7 +30,7 @@
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft JhengHei", Roboto, sans-serif;
         }
 
-        /* 漸層背景 (完全還原) */
+        /* 漸層背景 */
         body {
             background: linear-gradient(135deg, #d946ef 0%, #8b5cf6 30%, #06b6d4 100%);
             background-attachment: fixed;
@@ -440,13 +440,7 @@
     </section>
 
     <script>
-        // ⚠️ 請填入你的 Firebase Realtime Database 網址
-        const firebaseConfig = {
-            databaseURL: "https://thailand-59ca6-default-rtdb.firebaseio.com/"
-        };
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.database();
-
+        // 預設資料（確保 Firebase 尚未載入前畫面依然有資料）
         const defaultTeams = [
             { id: 1, name: "第 1 組", score: 0 },
             { id: 2, name: "第 2 組", score: 0 },
@@ -460,22 +454,43 @@
         let logs = [];
         let adminPassword = "admin";
         let currentRole = 'participant'; 
+        let db = null;
 
-        // 監聽 Firebase 雲端資料庫變更
-        db.ref('camp_data').on('value', (snapshot) => {
-            const data = snapshot.val();
-            if (data) {
-                if (data.teams) teams = data.teams;
-                if (data.logs) logs = data.logs;
-                if (data.adminPassword) adminPassword = data.adminPassword;
-            } else {
-                saveData(); 
-            }
-            render();
-        });
+        // 1. 頁面載入時立刻進行第一次畫面繪製（避免空白）
+        render();
+
+        // 2. 初始化 Firebase 連線
+        const firebaseConfig = {
+            // ⚠️ 請務必將下方網址改為你的 Firebase Realtime Database 網址
+            databaseURL: "https://thailand-59ca6-default-rtdb.firebaseio.com"
+        };
+
+        try {
+            firebase.initializeApp(firebaseConfig);
+            db = firebase.database();
+
+            // 監聽雲端資料庫更新
+            db.ref('camp_data').on('value', (snapshot) => {
+                const data = snapshot.val();
+                if (data) {
+                    if (data.teams) teams = data.teams;
+                    if (data.logs) logs = data.logs;
+                    if (data.adminPassword) adminPassword = data.adminPassword;
+                } else {
+                    saveData(); 
+                }
+                render(); // 取得雲端真實資料後重新繪製
+            }, (error) => {
+                console.error("Firebase 連線失敗，請檢查資料庫規則與網址：", error);
+            });
+        } catch (e) {
+            console.error("Firebase 初始化失敗：", e);
+        }
 
         function saveData() {
-            db.ref('camp_data').set({ teams, logs, adminPassword });
+            if (db) {
+                db.ref('camp_data').set({ teams, logs, adminPassword });
+            }
         }
 
         function switchRole(role) {
@@ -512,6 +527,7 @@
             if (newName && newName.trim() !== "") {
                 team.name = newName.trim();
                 saveData();
+                render();
             }
         }
 
@@ -532,6 +548,7 @@
             logs.unshift(newLog);
 
             saveData();
+            render();
         }
 
         function handleCustomScore(event, teamId) {
@@ -651,6 +668,7 @@
                 teams = defaultTeams.map(t => ({ ...t, score: 0 }));
                 logs = [];
                 saveData();
+                render();
             }
         }
     </script>
