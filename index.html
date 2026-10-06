@@ -620,9 +620,9 @@
                     adminControlsHtml = `
                         <div class="admin-controls">
                             <div class="quick-btn-group">
-                                <button class="btn btn-add" onclick="updateScore(${team.id}, 10)">+10</button>
-                                <button class="btn btn-add" onclick="updateScore(${team.id}, 50)">+50</button>
-                                <button class="btn btn-sub" onclick="updateScore(${team.id}, -10)">-10</button>
+                                <button class="btn btn-add" onclick="updateScore(${team.id}, 100)">+100</button>
+                                <button class="btn btn-add" onclick="updateScore(${team.id}, 500)">+500</button>
+                                <button class="btn btn-sub" onclick="updateScore(${team.id}, -100)">-100</button>
                             </div>
                             <form class="custom-score-form" onsubmit="handleCustomScore(event, ${team.id})">
                                 <input type="number" name="points" placeholder="分數" required>
